@@ -1,0 +1,549 @@
+
+
+Das ist der Ersten code, den wir uns überlegt haben. Das haben wir auch am 12.03 besprochen...
+
+
+
+
+
+
+
+
+#include <M5Stack.h> 
+
+#include <Unit_Sonic.h> 
+
+#include <WiFi.h> 
+
+#include <Adafruit_MQTT.h> 
+
+#include <Adafruit_MQTT_Client.h> 
+
+ 
+
+const char* ssid = "DEIN_WIFI_SSID"; 
+
+const char* password = "DEIN_WIFI_PASSWORT"; 
+
+ 
+
+const char* mqtt_server = "mqtt-broker.zdw31.cloud"; 
+
+const int mqtt_port = 1883; 
+
+const char* mqtt_username = "user1"; 
+
+const char* mqtt_password = "HWSFI2024!"; 
+
+const char* mqtt_topic = "distance"; 
+
+ 
+
+WiFiClient client; 
+
+Adafruit_MQTT_Client mqtt(&client, mqtt_server, mqtt_port, mqtt_username, mqtt_password); 
+
+ 
+
+SONIC_I2C sensor; 
+
+Adafruit_MQTT_Publish distancePub = Adafruit_MQTT_Publish(&mqtt, mqtt_topic); 
+
+ 
+
+const int graphHeight = 100; 
+
+const int maxDataPoints = 100; 
+
+int dataPoints[maxDataPoints] = {0}; 
+
+int dataIndex = 0; 
+
+ 
+
+void MQTT_connect() { 
+
+  int8_t ret; 
+
+  Serial.print("Connecting to MQTT... "); 
+
+  uint8_t retries = 3; 
+
+  while ((ret = mqtt.connect()) != 0) { 
+
+    Serial.println(mqtt.connectErrorString(ret)); 
+
+    Serial.println("Retrying MQTT connection in 5 seconds..."); 
+
+    mqtt.disconnect(); 
+
+    delay(5000); 
+
+    retries--; 
+
+    if (retries == 0) { 
+
+      while (1); 
+
+    } 
+
+  } 
+
+  Serial.println("MQTT Connected!"); 
+
+} 
+
+ 
+
+void setup() { 
+
+  M5.begin(); 
+
+  sensor.begin(); 
+
+  Serial.begin(9600); 
+
+ 
+
+  // Connect to Wi-Fi 
+
+  Serial.print("Connecting to Wi-Fi: "); 
+
+  Serial.println(ssid); 
+
+  WiFi.begin(ssid, password); 
+
+  while (WiFi.status() != WL_CONNECTED) { 
+
+    delay(500); 
+
+    Serial.print("."); 
+
+  } 
+
+  Serial.println(" Wi-Fi connected"); 
+
+  Serial.print("IP address: "); 
+
+  Serial.println(WiFi.localIP()); 
+
+ 
+
+  // Setup screen 
+
+  M5.Lcd.fillScreen(BLACK); 
+
+  M5.Lcd.setTextFont(1); 
+
+  M5.Lcd.setTextSize(2); 
+
+  M5.Lcd.setTextColor(WHITE); 
+
+ 
+
+  // Connect to MQTT 
+
+  MQTT_connect(); 
+
+} 
+
+ 
+
+void updateGraph(float value) { 
+
+  // Update data points array 
+
+  dataPoints[dataIndex] = map(value, 0, 2000, 0, graphHeight); 
+
+  dataIndex = (dataIndex + 1) % maxDataPoints; 
+
+ 
+
+  // Draw graph 
+
+  M5.Lcd.fillRect(0, 20, maxDataPoints, graphHeight, BLACK); 
+
+  for (int i = 0; i < maxDataPoints - 1; i++) { 
+
+    M5.Lcd.drawLine(i, graphHeight - dataPoints[(dataIndex + i) % maxDataPoints], i + 1, graphHeight - dataPoints[(dataIndex + i + 1) % maxDataPoints], GREEN); 
+
+  } 
+
+} 
+
+ 
+
+void loop() { 
+
+  // Ensure the connection to the MQTT server is alive 
+
+  MQTT_connect(); 
+
+ 
+
+  // Read distance from sensor 
+
+  float distance = sensor.getDistance(); 
+
+ 
+
+  // Publish distance to MQTT topic 
+
+  distancePub.publish(distance); 
+
+  Serial.println("Published distance: " + String(distance) + "mm"); 
+
+ 
+
+  // Update graph and display distance 
+
+  updateGraph(distance); 
+
+  M5.Lcd.fillRect(0, 0, 320, 20, BLACK); // Clear previous distance value 
+
+  M5.Lcd.setCursor(0, 0); 
+
+  M5.Lcd.print("Distance: "); 
+
+  M5.Lcd.print(distance); 
+
+  M5.Lcd.print(" mm"); 
+
+ 
+
+  // Display connection status on screen 
+
+  M5.Lcd.setCursor(0, 220); 
+
+  M5.Lcd.print("WiFi:"); 
+
+  if (WiFi.status() == WL_CONNECTED) { 
+
+    M5.Lcd.setTextColor(GREEN); 
+
+    M5.Lcd.print("Connected "); 
+
+  } else { 
+
+    M5.Lcd.setTextColor(RED); 
+
+    M5.Lcd.print("Disconnected "); 
+
+  } 
+
+ 
+
+  M5.Lcd.print(" MQTT:"); 
+
+  if (mqtt.connected()) { 
+
+    M5.Lcd.setTextColor(GREEN); 
+
+    M5.Lcd.print("Connected "); 
+
+  } else { 
+
+    M5.Lcd.setTextColor(RED); 
+
+    M5.Lcd.print("Disconnected "); 
+
+  } 
+
+ 
+
+  delay(1000);  // Adjustable delay between measurements 
+
+} 
+
+
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+Natürlich, ich erkläre dir gerne jede wichtige Zeile des Codes im Detail: 
+
+ 
+
+1. **`#include`-Direktiven**: Diese Zeilen importieren benötigte Bibliotheken in das Programm. 
+
+ 
+
+```cpp 
+
+#include <M5Stack.h> 
+
+#include <Unit_Sonic.h> 
+
+#include <WiFi.h> 
+
+#include <Adafruit_MQTT.h> 
+
+#include <Adafruit_MQTT_Client.h> 
+
+``` 
+
+ 
+
+2. **Variablendeklarationen**: 
+
+ 
+
+```cpp 
+
+const char* ssid = "DEIN_WIFI_SSID"; 
+
+const char* password = "DEIN_WIFI_PASSWORT"; 
+
+const char* mqtt_server = "mqtt-broker.zdw31.cloud"; 
+
+const int mqtt_port = 1883; 
+
+const char* mqtt_username = "user1"; 
+
+const char* mqtt_password = "HWSFI2024!"; 
+
+const char* mqtt_topic = "distance"; 
+
+``` 
+
+ 
+
+Hier werden verschiedene Konstanten deklariert, wie die SSID und das Passwort für das WLAN, die Adresse und die Anmeldeinformationen des MQTT-Brokers und das MQTT-Topic. 
+
+ 
+
+3. **Objektinstanziierungen**: 
+
+ 
+
+```cpp 
+
+WiFiClient client; 
+
+Adafruit_MQTT_Client mqtt(&client, mqtt_server, mqtt_port, mqtt_username, mqtt_password); 
+
+SONIC_I2C sensor; 
+
+Adafruit_MQTT_Publish distancePub = Adafruit_MQTT_Publish(&mqtt, mqtt_topic); 
+
+``` 
+
+ 
+
+Hier werden Objekte für die WLAN-Verbindung (`WiFiClient`), den MQTT-Client (`Adafruit_MQTT_Client` und `Adafruit_MQTT_Publish`) und den Ultraschallsensor (`SONIC_I2C`) erstellt. 
+
+ 
+
+4. **Funktion `MQTT_connect()`**: 
+
+ 
+
+```cpp 
+
+void MQTT_connect() { 
+
+  int8_t ret; 
+
+  Serial.print("Connecting to MQTT... "); 
+
+  uint8_t retries = 3; 
+
+  while ((ret = mqtt.connect()) != 0) { 
+
+    Serial.println(mqtt.connectErrorString(ret)); 
+
+    Serial.println("Retrying MQTT connection in 5 seconds..."); 
+
+    mqtt.disconnect(); 
+
+    delay(5000); 
+
+    retries--; 
+
+    if (retries == 0) { 
+
+      while (1); 
+
+    } 
+
+  } 
+
+  Serial.println("MQTT Connected!"); 
+
+} 
+
+``` 
+
+ 
+
+Diese Funktion wird verwendet, um eine Verbindung zum MQTT-Broker herzustellen. Sie versucht, eine Verbindung herzustellen, und versucht es erneut, wenn der Versuch fehlschlägt. 
+
+ 
+
+5. **`setup()`-Funktion**: 
+
+ 
+
+```cpp 
+
+void setup() { 
+
+  M5.begin(); 
+
+  sensor.begin(); 
+
+  Serial.begin(9600); 
+
+ 
+
+  // Verbindung zum WLAN herstellen 
+
+  Serial.print("Connecting to Wi-Fi: "); 
+
+  Serial.println(ssid); 
+
+  WiFi.begin(ssid, password); 
+
+  while (WiFi.status() != WL_CONNECTED) { 
+
+    delay(500); 
+
+    Serial.print("."); 
+
+  } 
+
+  Serial.println(" Wi-Fi connected"); 
+
+  Serial.print("IP address: "); 
+
+  Serial.println(WiFi.localIP()); 
+
+ 
+
+  // Bildschirmeinstellungen 
+
+  M5.Lcd.fillScreen(BLACK); 
+
+  M5.Lcd.setTextFont(1); 
+
+  M5.Lcd.setTextSize(2); 
+
+  M5.Lcd.setTextColor(WHITE); 
+
+ 
+
+  // Verbindung zum MQTT-Broker herstellen 
+
+  MQTT_connect(); 
+
+} 
+
+``` 
+
+ 
+
+In dieser Funktion werden die Anfangseinstellungen vorgenommen, einschließlich der Initialisierung des M5Stack, des Ultraschallsensors, der seriellen Kommunikation, der WLAN- und MQTT-Verbindung und der Bildschirmanzeige. 
+
+ 
+
+6. **`loop()`-Funktion**: 
+
+ 
+
+```cpp 
+
+void loop() { 
+
+  // Sicherstellen, dass die Verbindung zum MQTT-Server aktiv ist 
+
+  MQTT_connect(); 
+
+ 
+
+  // Abstand vom Sensor lesen 
+
+  float distance = sensor.getDistance(); 
+
+ 
+
+  // Abstand auf dem MQTT-Topic veröffentlichen 
+
+  distancePub.publish(distance); 
+
+  Serial.println("Published distance: " + String(distance) + "mm"); 
+
+ 
+
+  // Graph und Abstand auf dem Bildschirm aktualisieren 
+
+  updateGraph(distance); 
+
+  M5.Lcd.fillRect(0, 0, 320, 20, BLACK); // Vorherigen Abstandswert löschen 
+
+  M5.Lcd.setCursor(0, 0); 
+
+  M5.Lcd.print("Distance: "); 
+
+  M5.Lcd.print(distance); 
+
+  M5.Lcd.print(" mm"); 
+
+ 
+
+  // WLAN- und MQTT-Verbindungsstatus auf dem Bildschirm anzeigen 
+
+  M5.Lcd.setCursor(0, 220); 
+
+  M5.Lcd.print("WiFi:"); 
+
+  if (WiFi.status() == WL_CONNECTED) { 
+
+    M5.Lcd.setTextColor(GREEN); 
+
+    M5.Lcd.print("Connected "); 
+
+  } else { 
+
+    M5.Lcd.setTextColor(RED); 
+
+    M5.Lcd.print("Disconnected "); 
+
+  } 
+
+ 
+
+  M5.Lcd.print(" MQTT:"); 
+
+  if (mqtt.connected()) { 
+
+    M5.Lcd.setTextColor(GREEN); 
+
+    M5.Lcd.print("Connected "); 
+
+  } else { 
+
+    M5.Lcd.setTextColor(RED); 
+
+    M5.Lcd.print("Disconnected "); 
+
+  } 
+
+ 
+
+  delay(1000);  // Einstellbare Verzögerung zwischen den Messungen 
+
+} 
+
+``` 
+
+ 
+
+Diese Funktion wird kontinuierlich wiederholt und aktualisiert den Status der WLAN- und MQTT-Verbindung, misst die Entfernung, veröffentlicht die Entfernung auf dem MQTT-Topic, aktualisiert den Graphen und zeigt den Abstand und den Verbindungsstatus auf dem Bildschirm an. 
+
+ 
+
+Das sind die wichtigsten Teile des Codes und wie sie funktionieren. Lass mich wissen, wenn du weitere Fragen hast! 
