@@ -2,7 +2,5 @@
 M5Stacks with Arduino
 
 
-15.03.2024 
-
-LEO CODE
+15.03.2024 LEO CODE
 
