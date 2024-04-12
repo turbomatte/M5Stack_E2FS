@@ -1,0 +1,180 @@
+#include <M5Stack.h>
+#include <Unit_Sonic.h>
+#include <WiFi.h>
+#include <Adafruit_MQTT.h>
+#include <Adafruit_MQTT_Client.h>
+#include <Adafruit_NeoPixel.h> // Library for internal LED strip
+
+const char* ssid = "HWS-IOT";
+const char* password = "*HWSFI#2024";
+
+const char* mqtt_server = "mqtt-broker.zdw31.cloud";
+const int mqtt_port = 1883;
+const char* mqtt_username = "user1";
+const char* mqtt_password = "HWSFI2024!";
+const char* mqtt_topic = "distance";
+
+WiFiClient client;
+Adafruit_MQTT_Client mqtt(&client, mqtt_server, mqtt_port, mqtt_username, mqtt_password);
+
+SONIC_I2C sensor;
+Adafruit_MQTT_Publish distancePub = Adafruit_MQTT_Publish(&mqtt, mqtt_topic);
+
+const int maxDataPoints = 10; // Number of data points to display in the table
+float distanceData[maxDataPoints] = {0}; // Array to store distance data
+unsigned long lastUpdate = 0; // Last time the screen was updated
+const int updateInterval = 1000; // Update interval in milliseconds
+
+const int pirPin = 36; // PIR Sensor Pin
+const int ledPin = 15; // Internal LED strip pin
+
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, ledPin, NEO_GRB + NEO_KHZ800);
+
+void MQTT_connect() {
+  int8_t ret;
+  Serial.print("Connecting to MQTT... ");
+  uint8_t retries = 3;
+  while ((WiFi.status() != WL_CONNECTED) && (retries > 0)) {
+    WiFi.begin(ssid, password);
+    Serial.println("Attempting to connect to Wi-Fi...");
+    delay(5000);
+    retries--;
+  }
+
+  if (retries == 0) {
+    Serial.println("Failed to connect to Wi-Fi");
+    return;
+  }
+
+  Serial.println("Wi-Fi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  Serial.println("Connecting to MQTT...");
+  retries = 3;
+  while ((ret = mqtt.connect()) != 0 && retries > 0) {
+    Serial.println(mqtt.connectErrorString(ret));
+    Serial.println("Retrying MQTT connection in 5 seconds...");
+    delay(5000);
+    retries--;
+  }
+
+  if (retries == 0) {
+    Serial.println("Failed to connect to MQTT");
+    return;
+  }
+
+  Serial.println("MQTT Connected!");
+}
+
+void setup() {
+  M5.begin();
+  sensor.begin();
+  pixels.begin(); // Initialize internal LED strip
+  pinMode(pirPin, INPUT); // PIR Sensor Pin as Input
+  Serial.begin(9600);
+
+  // Connect to Wi-Fi and MQTT
+  MQTT_connect();
+
+  // Setup screen
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setTextFont(1);
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.setTextColor(WHITE);
+}
+
+void updateTable(float value) {
+  for (int i = maxDataPoints - 1; i > 0; i--) {
+    distanceData[i] = distanceData[i - 1]; // Shift data
+  }
+  distanceData[0] = value; // Insert new data at the beginning
+
+  // Clear previous table and display current data
+  M5.Lcd.fillRect(0, 0, 320, 240, BLACK);
+  M5.Lcd.setCursor(0, 0);
+  M5.Lcd.print("Batt: "); // Battery durch Batt ersetzt
+  M5.Lcd.print(String(M5.Power.getBatteryLevel()) + "%");
+
+  M5.Lcd.setCursor(160, 0);
+  M5.Lcd.print("MQTT: ");
+  if (mqtt.connected()) {
+    M5.Lcd.print("M"); // MQTT verbunden: "M"
+  } else {
+    M5.Lcd.print("MD"); // MQTT getrennt: "MD"
+  }
+
+  M5.Lcd.setCursor(220, 0);
+  M5.Lcd.print("WIFI: ");
+  if (WiFi.status() == WL_CONNECTED) {
+    M5.Lcd.print("W"); // WLAN verbunden: "W"
+  } else {
+    M5.Lcd.print("WD"); // WLAN getrennt: "WD"
+  }
+
+  M5.Lcd.setCursor(0, 20);
+  M5.Lcd.print("Distance Table:");
+
+  for (int i = 0; i < maxDataPoints; i++) {
+    M5.Lcd.setCursor(0, 40 + i * 20);
+    M5.Lcd.print("Entry " + String(i + 1) + ": ");
+    M5.Lcd.print(distanceData[i]);
+    M5.Lcd.print(" mm");
+  }
+}
+
+void loop() {
+  if (!mqtt.connected()) {
+    MQTT_connect();
+  }
+
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - lastUpdate >= updateInterval) {
+    float distance = sensor.getDistance();
+    if (distance >= 0 && distance <= 2000) {
+      // Publish distance to MQTT if within valid range
+      distancePub.publish(distance);
+      Serial.println("Published distance: " + String(distance) + "mm");
+    } else {
+      Serial.println("Invalid distance value: " + String(distance));
+    }
+
+    // Update table regardless of MQTT publishing
+    updateTable(distance);
+
+    // Check motion sensor
+    bool motionDetected = (digitalRead(pirPin) == HIGH);
+    if (motionDetected) {
+      // Turn on internal LED strip if motion detected
+      if (distance > 1000) {
+        // Green color if distance over 1000mm
+        pixels.setPixelColor(0, pixels.Color(0, 255, 0)); 
+      } else {
+        // Red color if distance under or equal to 1000mm
+        pixels.setPixelColor(0, pixels.Color(255, 0, 0)); 
+      }
+    } else {
+      // Turn off internal LED strip if no motion
+      pixels.setPixelColor(0, pixels.Color(0, 0, 0)); 
+    }
+    pixels.show();
+
+    // Display connection status on serial monitor
+    Serial.print("WiFi:");
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.print("Connected ");
+    } else {
+      Serial.print("Disconnected ");
+    }
+
+    Serial.print("MQTT:");
+    if (mqtt.connected()) {
+      Serial.println("Connected ");
+    } else {
+      Serial.println("Disconnected ");
+    }
+
+    lastUpdate = currentMillis;
+  }
+}
