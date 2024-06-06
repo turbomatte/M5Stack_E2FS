@@ -1,15 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MQTT Distance Display</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MQTT Distance Display</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+    #distance {
+      font-size: 2em;
+      color: #333;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-    <div id="status">Connecting...</div>
-    <div id="Distanz">Waiting for data...</div>
-    <script src="script.js"></script>
+  <div id="distance">Connecting...</div>
+
+  <script>
+    // MQTT broker details
+    const broker = 'mqtt-broker.zdw31.cloud';
+    const port = 9001;
+    const topic = 'distance';
+    const username = 'user1';
+    const password = 'HWSFI2024!';
+
+    // Create a WebSocket connection
+    const ws = new WebSocket(`ws://${broker}:${port}/mqtt`);
+
+    // Called when the WebSocket connection is opened
+    ws.onopen = function(event) {
+      console.log('WebSocket connected to broker');
+      updateStatus('Connected');
+      // Subscribe to the topic
+      ws.send(JSON.stringify({ action: 'subscribe', topic: topic }));
+    };
+
+    // Called when a message is received over the WebSocket connection
+    ws.onmessage = function(event) {
+      console.log('Message received:', event.data);
+      updateDistance(event.data);
+    };
+
+    // Called when an error occurs with the WebSocket connection
+    ws.onerror = function(event) {
+      console.error('WebSocket error:', event);
+      updateStatus('WebSocket error. Retrying...');
+    };
+
+    // Called when the WebSocket connection is closed
+    ws.onclose = function(event) {
+      console.log('WebSocket connection closed');
+      updateStatus('WebSocket connection closed. Reconnecting...');
+      // Reconnect after a short delay
+      setTimeout(() => {
+        ws = new WebSocket(`ws://${broker}:${port}/mqtt`);
+      }, 2000);
+    };
+
+    // Update the connection status display
+    function updateStatus(message) {
+      const statusElement = document.getElementById('distance');
+      statusElement.textContent = message;
+    }
+
+    // Update the displayed distance
+    function updateDistance(message) {
+      const distanceElement = document.getElementById('distance');
+      distanceElement.textContent = message;
+    }
+  </script>
 </body>
 </html>
