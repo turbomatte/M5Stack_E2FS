@@ -1,148 +1,77 @@
 body {
-	font-weight: 400;
-	perspective: 2000px;
-  background-color: rgb(241, 221, 221);
-
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f0f0f0; /* Light gray background */
 }
- .columnas{
-	font-size: 25px;
-	font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
-margin: 50px;			}
- 
-.dot {
-	height: 10px;
-	width: 10px;
-	border-radius: 50%;
-	display: inline-block;
-  }
-.green {
-	background-color: green;
-	animation: blinkGreen 3s infinite;
-  }
-  .red {
-	background-color: red;
-	animation: blinkRed 5s infinite;
-  }
-  @keyframes blinkGreen {
-	0% { opacity: 1; }
-	50% { opacity: 0; }
-	100% { opacity: 1; }
-  }
 
-  @keyframes blinkRed {
-	0% { opacity: 1; }
-	50% { opacity: 0; }
-	100% { opacity: 1; }
-  }
-
-
-
-section {
-  height: 300px;
-  border-radius: 0x 0x 10px 10px; /* Bordes circulares en la parte inferior */
-
-
-}
-p{
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-
+main {
+    flex: 1;
+    padding: 20px;
 }
 
 .pri {
-  height: 150px;
-width: 100%;
-/*background: linear-gradient(45deg, #614ad3, #e42c64); // Degradado cool
-
-  
-  border: 5px solid blueviolet;*/
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-  text-align: center;
-  
-
-
+    text-align: center;
 }
 
-h1 {
-  background-image: url(https://media.giphy.com/media/26BROrSHlmyzzHf3i/giphy.gif);
-  background-size: cover;
-  color: transparent;
-  -moz-background-clip: text;
-  -webkit-background-clip: text;
-  text-transform: uppercase;
-  font-size: 50px;
-  margin: 10px 0;
-  margin-top: 4%;
+.seg {
+    margin-top: 20px;
 }
-
 
 table {
-    margin: 90px auto;
-	text-align: center;
-  	border-spacing: 20px;
-	width: 680px;
-	box-shadow: 5px 4px 30px rgba(0,0,0,.10);
-	border-radius: 10px;
-	background: #fff;
-	transition: all .5s;
-	
-	
-	td {
-		padding: 20px 15px;
-	}
-	.columnas {
-		border-radius: 10px 10px 0 0;
-		font-size: 25px;
-font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
-padding: 5px;
-	}
-	thead {
-		background: linear-gradient(45deg, #614ad3, #e42c64);
-		border-radius: 10px 10px 0 0;
-	
-		
-		td {
-			color: #fff;
-			font-size: 20px;
-		}
-		
-		td:first-of-type {
-			border-radius: 10px 0 0 0;
-		}
-		
-		td:last-of-type {
-			border-radius: 0 10px 0 0;
-		}
-	}
-	
-	tbody {
-		td {
-			border-top: 1px solid #f0f0f0;
-		}
-		
-		tr:hover {
-			background: rgba(123, 153, 218, .1);
-		}
-	}
-
+    width: 100%;
+    border-collapse: collapse;
 }
 
-table.threeDMode {
-	transform: rotateX(65deg) rotateZ(-35deg);
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
 }
 
-footer{
-	margin-bottom: 20px;
+th {
+    background-color: #f2f2f2;
 }
 
-.popup {
-	display: none;
-	position: fixed;
-	top: 20%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	background-color: white;
-	padding: 20px;
-	border: 2px solid black;
-	border-radius: 5px;
-	box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  }
+.dot {
+    height: 15px;
+    width: 15px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.green {
+    background-color: green;
+}
+
+.red {
+    background-color: red;
+}
+
+.card-container {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.card {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 20%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+footer {
+    background-color: #f1f1f1;
+    text-align: center;
+    padding: 10px;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
