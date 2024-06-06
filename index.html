@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT Distance Data</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="heading">Distance Data</h1>
+        <div id="distanceData" class="data-container"></div>
+    </div>
+
+    <div class="credits">
+        <p>Website Design by Kamal, Leo, and Matte</p>
+        <p>Implemented by Marius</p>
+        <p>Scrum Master: Matte | Coder: Leo</p>
+    </div>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script>
+        // Connection options with client ID, username, and password
+        const options = {
+            clientId: 'webClient-' + Math.random().toString(16).substr(2, 8), // Generate a random client ID
+            username: 'user1',
+            password: 'HWSFI2024!'
+        };
+
+        // Connect to the MQTT broker via WebSockets
+        const client = mqtt.connect('ws://mqtt-broker.zdw31.cloud:9001/mqtt', options);
+
+        client.on('connect', function () {
+            console.log('Connected to MQTT broker');
+            // Subscribe to the distance/# topic
+            client.subscribe('distance/#', function (err) {
+                if (!err) {
+                    console.log('Subscribed to distance/#');
+                } else {
+                    console.error('Subscription error:', err);
+                }
+            });
+        });
+
+        // Handle incoming messages
+        client.on('message', function (topic, message) {
+            // Convert the message from a Buffer to a string
+            const messageString = message.toString();
+            
+            // Determine the type of message
+            let messageContent;
+            try {
+                messageContent = JSON.parse(messageString);
+            } catch (e) {
+                if (messageString === 'true' || messageString === 'false') {
+                    messageContent = messageString === 'true';
+                } else if (!isNaN(messageString)) {
+                    messageContent = Number(messageString);
+                } else {
+                    messageContent = messageString;
+                }
+            }
+
+            // Create message element
+            const distanceDataDiv = document.getElementById('distanceData');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            if (typeof messageContent === 'boolean') {
+                messageElement.classList.add('message-boolean');
+            } else if (typeof messageContent === 'number') {
+                messageElement.classList.add('message-number');
+            } else {
+                messageElement.classList.add('message-string');
+            }
+            messageElement.textContent = `Topic: ${topic}, Message: ${messageContent}`;
+            
+            // Remove older messages if more than 10
+            const messages = distanceDataDiv.getElementsByClassName('message');
+            if (messages.length >= 10) {
+                distanceDataDiv.removeChild(messages[messages.length - 1]); // Remove the oldest message
+            }
+            
+            // Add new message at the top
+            distanceDataDiv.prepend(messageElement);
+        });
+
+        // Handle connection errors
+        client.on('error', function (err) {
+            console.error('Connection error:', err);
+        });
+    </script>
+</body>
+</html>
