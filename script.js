@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', (event) => {
-    const clientId = 'Client69';
+    const clientId = 'Client' + Math.random().toString(36).substring(2, 15);
     const host = 'mqtt-broker.zdw31.cloud';
     const port = 9001;
     const path = 'mqtt';
@@ -58,9 +58,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function reconnect() {
+        statusElement.innerText = "Connecting...";
         client.connect(connectOptions);
     }
 
     // Initial connection
-    client.connect(connectOptions);
-});
+   
