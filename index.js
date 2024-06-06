@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     function onConnect() {
         console.log("Connected");
-        client.subscribe("/distance/");
+        client.subscribe("distance");
     }
 
     client.connect(connectOptions);
